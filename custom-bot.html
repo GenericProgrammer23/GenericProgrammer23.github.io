@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Search Assistant</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      padding-top: 50px;
+    }
+    #chatbox {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      width: 100%;
+      max-width: 600px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    #messages {
+      max-height: 300px;
+      overflow-y: auto;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 5px;
+      background: #fafafa;
+    }
+    .message {
+      margin-bottom: 10px;
+    }
+    .user {
+      font-weight: bold;
+      color: #0078d7;
+    }
+    .bot {
+      color: #333;
+    }
+    input[type="text"] {
+      width: 80%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      padding: 10px 15px;
+      border: none;
+      background: #0078d7;
+      color: white;
+      border-radius: 5px;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="chatbox">
+    <div id="messages"></div>
+    <input type="text" id="userInput" placeholder="Ask a question...">
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <script>
+    const apiKey = "fddffda0-c0de-419f-9e0d-4fa7b40f6dc0";
+    const assistantId = "7c8e2961-c958-4693-ab16-b68a6c82fd9f";
+    let sessionId = "";
+
+    // Start session
+    fetch('https://agentivehub.com/api/chat/session', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        api_key: apiKey,
+        assistant_id: assistantId
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      sessionId = data.session_id;
+    });
+
+    function appendMessage(sender, content) {
+      const container = document.getElementById("messages");
+      const msgDiv = document.createElement("div");
+      msgDiv.classList.add("message", sender);
+      msgDiv.textContent = `${sender === "user" ? "You" : "Bot"}: ${content}`;
+      container.appendChild(msgDiv);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function sendMessage() {
+      const input = document.getElementById("userInput");
+      const userMessage = input.value.trim();
+      if (!userMessage) return;
+
+      appendMessage("user", userMessage);
+      input.value = "";
+
+      fetch('https://agentivehub.com/api/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          api_key: apiKey,
+          session_id: sessionId,
+          assistant_id: assistantId,
+          type: "custom_code",
+          messages: [{ role: "user", content: userMessage }]
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const botReply = data.message || "No response received.";
+        appendMessage("bot", botReply);
+      })
+      .catch(() => appendMessage("bot", "Error getting response from bot."));
+    }
+  </script>
+</body>
+</html>
